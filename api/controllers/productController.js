@@ -78,7 +78,7 @@ const determineBidStatus = (startbidTime, endbidTime, date) => {
 
     // Convert current time to IST
     const currentTime = convertToIST(new Date().toISOString(), isDaylightSaving);
-
+    console.log(currentTime);
     // Convert bid start and end times to IST
     const bidStartTime = convertToIST(new Date(date).toISOString(), isDaylightSaving);
     const bidEndTime = convertToIST(new Date(date).toISOString(), isDaylightSaving);
