@@ -74,7 +74,7 @@ const determineBidStatus = (startbidTime, endbidTime, date) => {
 
     // Convert current UTC time to IST
     const currentTime = convertUtcToIst(new Date());
-    
+    console.log(currentTime)
     // Use date from the database which is already in IST
     const bidStartTime = new Date(date);
     const bidEndTime = new Date(date);
