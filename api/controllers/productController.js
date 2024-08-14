@@ -2,7 +2,7 @@ import Product from '../models/product.js';
 
 // Create a product
 export const createProduct = async (req, res) => {
-    const { type, contract, available, price, startbidTime, endbidTime, date, companyId } = req.body;
+    const { type, contract, available, price, startbidTime, endbidTime, date,companyId } = req.body;
     try {
         const newProduct = new Product({
             type,
@@ -62,34 +62,17 @@ export const deleteProduct = async (req, res) => {
 
 // Utility function to determine if a bid is live, future, or past
 const determineBidStatus = (startbidTime, endbidTime, date) => {
-    if (!startbidTime || !endbidTime || !date) {
-        return 'unknown'; // Handle missing data
-    }
-
-    // Helper function to convert time from PST/PDT to IST
-    const convertToIST = (dateStr, isDaylightSaving) => {
-        const date = new Date(dateStr);
-        const offset = isDaylightSaving ? 12.5 * 60 * 60 * 1000 : 13.5 * 60 * 60 * 1000; // in milliseconds
-        return new Date(date.getTime() + offset);
-    };
-
-    // Determine if the current time is in Daylight Saving Time (DST) or Standard Time (ST)
-    const isDaylightSaving = (new Date()).getTimezoneOffset() < 60 * 8;
-
-    // Convert current time to IST
-    const currentTime = convertToIST(new Date().toISOString(), isDaylightSaving);
+    const currentTime = new Date();
+    const bidStartTime = new Date(date);
+    const bidEndTime = new Date(date);
     console.log(currentTime);
-    // Convert bid start and end times to IST
-    const bidStartTime = convertToIST(new Date(date).toISOString(), isDaylightSaving);
-    const bidEndTime = convertToIST(new Date(date).toISOString(), isDaylightSaving);
-
     const [startHours, startMinutes] = startbidTime.split(':');
-    bidStartTime.setUTCHours(parseInt(startHours, 10));
-    bidStartTime.setUTCMinutes(parseInt(startMinutes, 10));
+    bidStartTime.setHours(parseInt(startHours));
+    bidStartTime.setMinutes(parseInt(startMinutes));
 
     const [endHours, endMinutes] = endbidTime.split(':');
-    bidEndTime.setUTCHours(parseInt(endHours, 10));
-    bidEndTime.setUTCMinutes(parseInt(endMinutes, 10));
+    bidEndTime.setHours(parseInt(endHours));
+    bidEndTime.setMinutes(parseInt(endMinutes));
 
     if (currentTime < bidStartTime) {
         return 'future';
@@ -104,10 +87,7 @@ const determineBidStatus = (startbidTime, endbidTime, date) => {
 export const getFutureBids = async (req, res) => {
     try {
         const products = await Product.find();
-        const futureBids = products.filter(product => {
-            const status = determineBidStatus(product.startbidTime, product.endbidTime, product.date);
-            return status === 'future';
-        });
+        const futureBids = products.filter(product => determineBidStatus(product.startbidTime, product.endbidTime, product.date) === 'future');
         res.status(200).json(futureBids);
     } catch (err) {
         res.status(500).json({ message: err.message });
@@ -118,10 +98,7 @@ export const getFutureBids = async (req, res) => {
 export const getLiveBids = async (req, res) => {
     try {
         const products = await Product.find();
-        const liveBids = products.filter(product => {
-            const status = determineBidStatus(product.startbidTime, product.endbidTime, product.date);
-            return status === 'live';
-        });
+        const liveBids = products.filter(product => determineBidStatus(product.startbidTime, product.endbidTime, product.date) === 'live');
         res.status(200).json(liveBids);
     } catch (err) {
         res.status(500).json({ message: err.message });
