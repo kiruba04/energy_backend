@@ -1,8 +1,14 @@
 import Product from '../models/product.js';
 
+// Function to convert UTC date to IST
+const convertUtcToIst = (date) => {
+    const istOffset = 5.5 * 60 * 60 * 1000; // IST is UTC+5:30
+    return new Date(date.getTime() + istOffset);
+};
+
 // Create a product
 export const createProduct = async (req, res) => {
-    const { type, contract, available, price, startbidTime, endbidTime, date,companyId } = req.body;
+    const { type, contract, available, price, startbidTime, endbidTime, date, companyId } = req.body;
     try {
         const newProduct = new Product({
             type,
@@ -62,17 +68,24 @@ export const deleteProduct = async (req, res) => {
 
 // Utility function to determine if a bid is live, future, or past
 const determineBidStatus = (startbidTime, endbidTime, date) => {
-    const currentTime = new Date();
+    if (!startbidTime || !endbidTime || !date) {
+        return 'unknown'; // Handle missing data
+    }
+
+    // Convert current UTC time to IST
+    const currentTime = convertUtcToIst(new Date());
+    
+    // Use date from the database which is already in IST
     const bidStartTime = new Date(date);
     const bidEndTime = new Date(date);
-    console.log(currentTime);
+
     const [startHours, startMinutes] = startbidTime.split(':');
-    bidStartTime.setHours(parseInt(startHours));
-    bidStartTime.setMinutes(parseInt(startMinutes));
+    bidStartTime.setHours(parseInt(startHours, 10));
+    bidStartTime.setMinutes(parseInt(startMinutes, 10));
 
     const [endHours, endMinutes] = endbidTime.split(':');
-    bidEndTime.setHours(parseInt(endHours));
-    bidEndTime.setMinutes(parseInt(endMinutes));
+    bidEndTime.setHours(parseInt(endHours, 10));
+    bidEndTime.setMinutes(parseInt(endMinutes, 10));
 
     if (currentTime < bidStartTime) {
         return 'future';
