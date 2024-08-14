@@ -87,6 +87,30 @@ const bidSocket = (io) => {
             console.log(`${userId} joined chat room ${productId}`);
         });
 
+        // Handle closing the bid manually
+        socket.on('closeBid', async ({ productId }) => {
+            try {
+                if (activeBids[productId]) {
+                    // Clear the timer and remove from active bids
+                    clearTimeout(activeBids[productId]);
+                    delete activeBids[productId];
+        
+                    // Fetch the final bid details
+                    const finalBid = await Bid.findOne({ productId });
+        
+                    // Update the product status to 'end'
+                    await Product.findByIdAndUpdate(productId, { status: 'end' });
+        
+                    // Emit bid ended event to all clients in the room
+                    io.to(productId).emit('bidEnded', { winner: finalBid?.lastBidder || 'No bids placed' });
+                }
+            } catch (error) {
+                console.error('Error closing bid:', error);
+                socket.emit('bidError', 'Error closing the bid.');
+            }
+        });
+        
+
         // Cleanup on disconnect
         socket.on('disconnect', () => {
             console.log('Client disconnected');
