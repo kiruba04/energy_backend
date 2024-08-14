@@ -59,20 +59,21 @@ export const deleteProduct = async (req, res) => {
         res.status(500).json({ message: err.message });
     }
 };
-
 // Utility function to determine if a bid is live, future, or past
 const determineBidStatus = (startbidTime, endbidTime, date) => {
+    if (!startbidTime || !endbidTime || !date) {
+        return 'unknown'; // Handle missing data
+    }
+
     const currentTime = new Date();
     const bidStartTime = new Date(date);
     const bidEndTime = new Date(date);
 
     const [startHours, startMinutes] = startbidTime.split(':');
-    bidStartTime.setHours(parseInt(startHours));
-    bidStartTime.setMinutes(parseInt(startMinutes));
+    bidStartTime.setHours(parseInt(startHours, 10), parseInt(startMinutes, 10));
 
     const [endHours, endMinutes] = endbidTime.split(':');
-    bidEndTime.setHours(parseInt(endHours));
-    bidEndTime.setMinutes(parseInt(endMinutes));
+    bidEndTime.setHours(parseInt(endHours, 10), parseInt(endMinutes, 10));
 
     if (currentTime < bidStartTime) {
         return 'future';
@@ -87,7 +88,10 @@ const determineBidStatus = (startbidTime, endbidTime, date) => {
 export const getFutureBids = async (req, res) => {
     try {
         const products = await Product.find();
-        const futureBids = products.filter(product => determineBidStatus(product.startbidTime, product.endbidTime, product.date) === 'future');
+        const futureBids = products.filter(product => {
+            const status = determineBidStatus(product.startbidTime, product.endbidTime, product.date);
+            return status === 'future';
+        });
         res.status(200).json(futureBids);
     } catch (err) {
         res.status(500).json({ message: err.message });
@@ -98,7 +102,10 @@ export const getFutureBids = async (req, res) => {
 export const getLiveBids = async (req, res) => {
     try {
         const products = await Product.find();
-        const liveBids = products.filter(product => determineBidStatus(product.startbidTime, product.endbidTime, product.date) === 'live');
+        const liveBids = products.filter(product => {
+            const status = determineBidStatus(product.startbidTime, product.endbidTime, product.date);
+            return status === 'live';
+        });
         res.status(200).json(liveBids);
     } catch (err) {
         res.status(500).json({ message: err.message });
